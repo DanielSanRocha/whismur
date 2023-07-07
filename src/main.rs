@@ -1,14 +1,13 @@
 use druid::widget::{Flex, Label, TextBox, Button};
-use druid::{LocalizedString, AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily};
-use models::AppData;
+use druid::{AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
 
 mod models;
 
 fn main() -> Result<(), PlatformError> {
     let main_window = WindowDesc::new(ui_builder())
-        .with_min_size((900.0,400.0))
+        .with_min_size((950.0,400.0))
         .title("Whismur")
-        .window_size((900.0,400.0));
+        .window_size((950.0,400.0));
 
     let data = models::AppData {serial_port: String::from("/dev/ttyACM0"), baud_rate: String::from("9600"), connected: false};
 
@@ -44,20 +43,26 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .align_left()
         .disabled_if(|data, _| data.connected);
 
-    let connect_button_string = LocalizedString::new("hello-counter")
-        .with_arg("count", |data: &AppData, _env| data.baud_rate.clone().into());
-
-    let connect_button = Button::new(connect_button_string)
-        .on_click(|_ctx, data: &mut models::AppData, _env| (*data).connected = !data.connected)
+    let connect_button = Button::new("Connect")
+        .on_click(|_ctx, data: &mut models::AppData, _env| (*data).connected = true)
         .padding(5.0)
-        .center();
+        .center()
+        .disabled_if(|data, _| data.connected)
+        .background(Color::rgb(0.1, 1.0, 0.2));
+    let disconnect_button = Button::new("Disconnect")
+        .on_click(|_ctx, data: &mut models::AppData, _env| (*data).connected = false)
+        .padding(5.0)
+        .center()
+        .disabled_if(|data, _| !data.connected)
+        .background(Color::rgb(1.0,0.2,0.1));
 
     let serial_row = Flex::row()
         .with_child(serial_port_label)
         .with_child(serial_port_text_box)
         .with_child(baud_rate_label)
         .with_child(baud_rate_text_box)
-        .with_child(connect_button);
+        .with_child(connect_button)
+        .with_child(disconnect_button);
 
     Flex::column().with_child(serial_row)
 }
