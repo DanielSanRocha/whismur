@@ -1,17 +1,21 @@
-use druid::widget::{Flex, Label, TextBox, Button};
+use druid::widget::{Flex, Label, TextBox, Button, Align};
 use druid::{AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
 
 mod models;
 
 fn main() -> Result<(), PlatformError> {
     let main_window = WindowDesc::new(ui_builder())
-        .with_min_size((950.0,400.0))
         .title("Whismur")
+        .with_min_size((950.0,400.0))
         .window_size((950.0,400.0));
 
-    let data = models::AppData {serial_port: String::from("/dev/ttyACM0"), baud_rate: String::from("9600"), connected: false};
+    let data = models::AppData {
+        serial_port: String::from("/dev/ttyACM0"),
+        baud_rate: String::from("9600"),
+        connected: false
+    };
 
-    AppLauncher::with_window(main_window).launch(data)
+    AppLauncher::with_window(main_window).log_to_console().launch(data)
 }
 
 fn ui_builder() -> impl Widget<models::AppData> {
@@ -64,5 +68,15 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .with_child(connect_button)
         .with_child(disconnect_button);
 
-    Flex::column().with_child(serial_row)
+    let footer_label: Align<models::AppData> = Label::new("Status: Disconnected!")
+        .with_font(font.clone())
+        .with_text_color(Color::rgb(1.0,0.2,0.2))
+        .padding(5.0)
+        .align_right();
+    let footer_row = Flex::row()
+        .with_child(footer_label).align_right();
+
+    Flex::column()
+        .with_child(serial_row)
+        .with_child(footer_row)
 }
