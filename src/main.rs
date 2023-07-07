@@ -1,5 +1,6 @@
 use druid::widget::{Flex, Label, TextBox, Button, Align};
 use druid::{AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
+use druid::im::Vector;
 
 mod models;
 
@@ -12,6 +13,7 @@ fn main() -> Result<(), PlatformError> {
     let data = models::AppData {
         serial_port: String::from("/dev/ttyACM0"),
         baud_rate: String::from("9600"),
+        rules: Vector::new(),
         connected: false
     };
 
@@ -68,15 +70,39 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .with_child(connect_button)
         .with_child(disconnect_button);
 
+    let rules_label: Align<models::AppData> = Label::new("Rules")
+        .with_font(font.clone())
+        .padding(10.0)
+        .fix_height(100.0)
+        .center();
+
+    let add_rule_button: Align<models::AppData> = Button::new("Add Rule")
+        .padding(5.0)
+        .fix_width(100.0)
+        .center();
+    let save_button:  Align<models::AppData> = Button::new("Save")
+        .padding(5.0)
+        .fix_width(100.0)
+        .center();
+    let load_button: Align<models::AppData> = Button::new("Load")
+        .padding(5.0)
+        .fix_width(100.0)
+        .center();
+
     let footer_label: Align<models::AppData> = Label::new("Status: Disconnected!")
         .with_font(font.clone())
         .with_text_color(Color::rgb(1.0,0.2,0.2))
         .padding(5.0)
         .align_right();
     let footer_row = Flex::row()
-        .with_child(footer_label).align_right();
+       .with_child(add_rule_button)
+       .with_child(save_button)
+       .with_child(load_button)
+       .with_child(footer_label)
+       .align_right();
 
     Flex::column()
         .with_child(serial_row)
+        .with_child(rules_label)
         .with_child(footer_row)
 }
