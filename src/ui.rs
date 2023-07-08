@@ -1,9 +1,10 @@
+use std::sync::mpsc::{Sender, Receiver};
 use druid::{commands, FileSpec, Key, Widget, WidgetExt, FontDescriptor, FontFamily, Color, FileDialogOptions};
 use druid::widget::{Scroll, Flex, Label, TextBox, Button, Align, List};
 
 use crate::models;
 
-pub fn ui_builder() -> impl Widget<models::AppData> {
+pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::Status>, tx_disconnect: Sender<bool>, rx_status2: Receiver<models::Status>) -> impl Widget<models::AppData> {
     let json = FileSpec::new("JSON File", &["json"]);
 
     let save_dialog_options = FileDialogOptions::new()
@@ -48,13 +49,29 @@ pub fn ui_builder() -> impl Widget<models::AppData> {
         .disabled_if(|data, _| data.connected);
 
     let connect_button = Button::new("Connect")
-        .on_click(|_ctx, data: &mut models::AppData, _env| (*data).connected = true)
+        .on_click(move |_ctx, data: &mut models::AppData, _env| {
+            let _ = tx_data.send((*data).clone());
+            let status =  rx_status.recv().expect("Error receiving status from thread!");
+            if status.connected {
+                (*data).connected = true;
+            } else {
+                println!("{}", status.message);
+            }
+        })
         .padding(5.0)
         .center()
         .disabled_if(|data, _| data.connected)
         .background(Color::rgb(0.1, 1.0, 0.2));
     let disconnect_button = Button::new("Disconnect")
-        .on_click(|_ctx, data: &mut models::AppData, _env| (*data).connected = false)
+        .on_click(move |_ctx, data: &mut models::AppData, _env| {
+            let _ = tx_disconnect.send(true);
+            let status = rx_status2.recv().expect("Erro receiving disconnect status from thread!");
+            if status.connected == false {
+                (*data).connected = false;
+            } else {
+                println!("{}", status.message);
+            }
+        })
         .padding(5.0)
         .center()
         .disabled_if(|data, _| !data.connected)
@@ -102,12 +119,14 @@ pub fn ui_builder() -> impl Widget<models::AppData> {
         }).background(Color::rgb(0.4,0.4,0.4))
         .lens(models::AppData::rules))
         .fix_height(250.0)
-        .padding(20.0);
+        .padding(20.0)
+        .disabled_if(|data, _| (*data).connected);
 
     let add_rule_button: Align<models::AppData> = Button::new("Add Rule")
         .on_click(|_ctx, data: &mut models::AppData, _env| {
             (*data).rules.push_back(models::Rule {character: "a".to_string(), channel: "0".to_string(), code: "0".to_string(), data: "0".to_string()})
         })
+        .disabled_if(|data, _| (*data).connected)
         .padding(5.0)
         .fix_width(100.0)
         .center();
@@ -118,7 +137,7 @@ pub fn ui_builder() -> impl Widget<models::AppData> {
                 (*data).rules.remove(l - 1);
             }
         })
-        .disabled_if(|data, _| (*data).rules.len() == 0)
+        .disabled_if(|data, _| (*data).rules.len() == 0 || (*data).connected)
         .padding(5.0);
     let save_button: Align<models::AppData> = Button::new("Save")
         .on_click(move |ctx, _: &mut models::AppData, _| {

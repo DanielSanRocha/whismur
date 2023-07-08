@@ -7,6 +7,7 @@ pub struct AppData {
     pub serial_port: String,
     pub baud_rate: String,
     pub rules: Vector<Rule>,
+    #[serde(skip_serializing, skip_deserializing)]
     pub connected: bool
 }
 
@@ -16,4 +17,10 @@ pub struct Rule {
     pub channel: String,
     pub code: String,
     pub data: String
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct Status {
+    pub connected: bool,
+    pub message: String
 }
