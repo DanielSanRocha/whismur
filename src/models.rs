@@ -11,8 +11,8 @@ pub struct AppData {
 
 #[derive(Debug, Clone, Data, Lens, Default)]
 pub struct Rule {
-    pub character: char,
-    pub channel: u8,
-    pub code: u8,
-    pub data: u8
+    pub character: String,
+    pub channel: String,
+    pub code: String,
+    pub data: String
 }

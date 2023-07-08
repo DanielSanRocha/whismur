@@ -1,14 +1,15 @@
-use druid::widget::{Flex, Label, TextBox, Button, Align};
+use druid::widget::{Scroll, Flex, Label, TextBox, Button, Align, List};
 use druid::{AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
 use druid::im::Vector;
+use models::AppData;
 
 mod models;
 
 fn main() -> Result<(), PlatformError> {
     let main_window = WindowDesc::new(ui_builder())
         .title("Whismur")
-        .with_min_size((950.0,400.0))
-        .window_size((950.0,400.0));
+        .with_min_size((950.0,420.0))
+        .window_size((950.0,420.0));
 
     let data = models::AppData {
         serial_port: String::from("/dev/ttyACM0"),
@@ -73,14 +74,56 @@ fn ui_builder() -> impl Widget<models::AppData> {
     let rules_label: Align<models::AppData> = Label::new("Rules")
         .with_font(font.clone())
         .padding(10.0)
-        .fix_height(100.0)
+        .fix_height(30.0)
         .center();
 
+    let small_font = FontDescriptor::new(FontFamily::MONOSPACE)
+        .with_size(20.0);
+
+    let rules_scroll = Scroll::new(List::new(move || {
+            Flex::row()
+                .with_child(Label::new("Character").with_font(small_font.clone()))
+                .with_child(TextBox::new()
+                    .with_font(small_font.clone())
+                    .lens(models::Rule::character)
+                )
+                .with_child(Label::new("Channel").with_font(small_font.clone()))
+                .with_child(TextBox::new()
+                    .with_font(small_font.clone())
+                    .lens(models::Rule::channel)
+                )
+                .with_child(Label::new("Code").with_font(small_font.clone()))
+                .with_child(TextBox::new()
+                    .with_font(small_font.clone())
+                    .lens(models::Rule::code)
+                )
+                .with_child(Label::new("Data").with_font(small_font.clone()))
+                .with_child(TextBox::new()
+                    .with_font(small_font.clone())
+                    .lens(models::Rule::data)
+                )
+        }).background(Color::rgb(0.4,0.4,0.4))
+        .lens(models::AppData::rules))
+        .fix_height(250.0)
+        .padding(20.0);
+
     let add_rule_button: Align<models::AppData> = Button::new("Add Rule")
+        .on_click(|_ctx, data: &mut AppData, _env| {
+            (*data).rules.push_back(models::Rule {character: "a".to_string(), channel: "0".to_string(), code: "0".to_string(), data: "0".to_string()})
+        })
         .padding(5.0)
         .fix_width(100.0)
         .center();
-    let save_button:  Align<models::AppData> = Button::new("Save")
+    let remove_rule_button = Button::new("Remove Last Rule")
+        .on_click(|_ctx, data: &mut AppData, _env| {
+            let l = (*data).rules.len();
+            if l > 0 {
+                (*data).rules.remove(l - 1);
+            }
+        })
+        .disabled_if(|data, _| (*data).rules.len() == 0)
+        .padding(5.0);
+    let save_button: Align<models::AppData> = Button::new("Save")
         .padding(5.0)
         .fix_width(100.0)
         .center();
@@ -95,6 +138,7 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .padding(5.0)
         .align_right();
     let footer_row = Flex::row()
+       .with_child(remove_rule_button)
        .with_child(add_rule_button)
        .with_child(save_button)
        .with_child(load_button)
@@ -104,5 +148,6 @@ fn ui_builder() -> impl Widget<models::AppData> {
     Flex::column()
         .with_child(serial_row)
         .with_child(rules_label)
+        .with_child(rules_scroll)
         .with_child(footer_row)
 }
