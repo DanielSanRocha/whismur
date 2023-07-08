@@ -2,10 +2,6 @@
 
 <img src="whismur.png" width="180" height="180"/>
 
-## Disclaimer
-
-This is a work in progress (WIP).
-
 ## Description
 
 Whismur is a small application written Rust to create a bridge between a serial port and a Jack MIDI Port. Very useful for controlling MIDI devices/creating sounds using your arduino.
@@ -16,7 +12,7 @@ Just program your arduino to print to the serial port simple characters and conf
 
 ## Installation
 
-For linux, download the prebuilt binaries available in the [releases](https://github.com/DanielSanRocha/whismur/releases) (WIP!). For other OSs, run it from source.
+For linux, download the prebuilt binaries available in the [releases](https://github.com/DanielSanRocha/whismur/releases). For other OSs, run it from source.
 
 ## Running from Source
 
@@ -28,7 +24,43 @@ on the root directory.
 
 ## Arduino Example Code
 
-WIP
+Below an example of arduino code for printing to the serial using two buttons. You can use this snippet for programming your arduino and use it for controlling a drums for example (using whismur!).
+
+```C
+const int pedalPin = 2;
+const int otherPedalPin = 3;
+
+int pedalState = LOW;
+int otherPedalState = LOW;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(pedalPin, INPUT);
+
+  Serial.print("Arduino is Ready!");
+}
+
+void loop() {
+  int newPedalState = digitalRead(pedalPin);
+  int newOtherPedalState = digitalRead(otherPedalPin);
+
+  if(newPedalState == HIGH && pedalState == LOW) {
+    Serial.print("p");
+    pedalState = newPedalState;
+  } else if (newPedalState == LOW && pedalState == HIGH) {
+    Serial.print("r");
+    pedalState = newPedalState;
+  }
+
+  if(newOtherPedalState == HIGH && otherPedalState == LOW) {
+    Serial.print("q");
+    otherPedalState = newOtherPedalState;
+  } else if (newOtherPedalState == LOW && otherPedalState == HIGH) {
+    Serial.print("w");
+    otherPedalState = newOtherPedalState;
+  }
+}
+```
 
 ## Acknowledgments
 
