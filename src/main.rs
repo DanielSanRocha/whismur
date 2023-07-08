@@ -1,9 +1,10 @@
 use druid::widget::{Scroll, Flex, Label, TextBox, Button, Align, List};
-use druid::{Key, AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
+use druid::{commands, FileSpec, Key, AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color, FileDialogOptions};
 use druid::im::Vector;
 use models::AppData;
 
 mod models;
+mod delegate;
 
 fn main() -> Result<(), PlatformError> {
     let main_window = WindowDesc::new(ui_builder())
@@ -18,10 +19,22 @@ fn main() -> Result<(), PlatformError> {
         connected: false
     };
 
-    AppLauncher::with_window(main_window).log_to_console().launch(data)
+    AppLauncher::with_window(main_window)
+        .delegate(delegate::Delegate)
+        .log_to_console()
+        .launch(data)
 }
 
 fn ui_builder() -> impl Widget<models::AppData> {
+    let json = FileSpec::new("JSON File", &["json"]);
+
+    let save_dialog_options = FileDialogOptions::new()
+        .allowed_types(vec![json])
+        .default_type(json)
+        .default_name(String::from("config.json"))
+        .title("Save the current program state")
+        .button_text("Save");
+
     let font = FontDescriptor::new(FontFamily::MONOSPACE).with_size(26.0);
 
     let serial_port_label = Label::new("Port")
@@ -124,6 +137,9 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .disabled_if(|data, _| (*data).rules.len() == 0)
         .padding(5.0);
     let save_button: Align<models::AppData> = Button::new("Save")
+        .on_click(move |ctx, _, _| {
+            ctx.submit_command(commands::SHOW_SAVE_PANEL.with(save_dialog_options.clone()))
+        })
         .padding(5.0)
         .fix_width(100.0)
         .center();

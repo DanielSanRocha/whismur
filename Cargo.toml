@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-druid = { version = "0.8.3", features = ["im"] }
+druid = { version = "0.8.3", features = ["im", "serde"] }
+serde_json = "1.0.100"
+serde = { version = "1.0.167", features = ["derive"] }

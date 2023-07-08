@@ -1,7 +1,8 @@
 use druid::{Data, Lens};
 use druid::im::Vector;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Data, Lens, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, Data, Lens, Default)]
 pub struct AppData {
     pub serial_port: String,
     pub baud_rate: String,
@@ -9,7 +10,7 @@ pub struct AppData {
     pub connected: bool
 }
 
-#[derive(Debug, Clone, Data, Lens, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, Data, Lens, Default)]
 pub struct Rule {
     pub character: String,
     pub channel: String,
