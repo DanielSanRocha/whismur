@@ -1,5 +1,5 @@
 use druid::widget::{Scroll, Flex, Label, TextBox, Button, Align, List};
-use druid::{AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
+use druid::{Key, AppLauncher, PlatformError, Widget, WidgetExt, WindowDesc, FontDescriptor, FontFamily, Color};
 use druid::im::Vector;
 use models::AppData;
 
@@ -132,11 +132,23 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .fix_width(100.0)
         .center();
 
-    let footer_label: Align<models::AppData> = Label::new("Status: Disconnected!")
+    let footer_label_color_key = Key::new("color");
+    let footer_label = Label::new(
+        |data: &AppData, _env: &_| {
+            if data.connected {String::from("     Status: Connected")}
+            else {String::from("  Status: Disconnected")}
+        })
         .with_font(font.clone())
-        .with_text_color(Color::rgb(1.0,0.2,0.2))
+        .with_text_color(footer_label_color_key.clone())
         .padding(5.0)
-        .align_right();
+        .align_right()
+        .env_scope(move |env, data| {
+            if data.connected {
+                env.set(footer_label_color_key.clone(), Color::rgb(0.2,1.0,0.2))
+            } else {
+                env.set(footer_label_color_key.clone(), Color::rgb(1.0,1.0,0.2))
+            }
+        });
     let footer_row = Flex::row()
        .with_child(remove_rule_button)
        .with_child(add_rule_button)
