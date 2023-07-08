@@ -11,6 +11,28 @@ mod delegate;
 mod ui;
 
 fn main() -> Result<(), PlatformError> {
+    let (client, _status) = jack::Client::new("whismur", jack::ClientOptions::NO_START_SERVER).unwrap();
+    let mut midi_port = client.register_port("out", jack::MidiOut::default()).expect("Error creating MIDI out port!");
+    let (midi_sender, midi_receiver) = mpsc::channel::<models::MIDI>();
+
+    let cback = move |_: &jack::Client, ps: &jack::ProcessScope| -> jack::Control {
+        let mut put_p = midi_port.writer(ps);
+        match midi_receiver.recv_timeout(Duration::from_millis(1)) {
+            Ok(midi) => {
+                put_p.write(&jack::RawMidi {
+                    time: 0,
+                    bytes: &[
+                        midi.data | midi.channel,
+                        midi.note,
+                        midi.velocity
+                    ],
+                }).unwrap();
+            },
+            Err(_) => {}
+        };
+        jack::Control::Continue
+    };
+
     let (tx_data,rx_data) = mpsc::channel::<models::AppData>();
     let (tx_status, rx_status) = mpsc::channel::<models::Status>();
     let (tx_status2, rx_status2) = mpsc::channel::<models::Status>();
@@ -28,18 +50,24 @@ fn main() -> Result<(), PlatformError> {
         connected: false
     };
 
-
     thread::spawn(move || {
-        listener_thread(&rx_data, &tx_status, &rx_disconnect, &tx_status2);
+        listener_thread(&rx_data, &tx_status, &rx_disconnect, &tx_status2, midi_sender);
     });
 
-    AppLauncher::with_window(main_window)
+    let activate_client = client
+        .activate_async((), jack::ClosureProcessHandler::new(cback))
+        .unwrap();
+
+    let result = AppLauncher::with_window(main_window)
         .delegate(delegate::Delegate)
         .log_to_console()
-        .launch(data)
+        .launch(data);
+
+    activate_client.deactivate().unwrap();
+    result
 }
 
-fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<models::Status>, rx_disconnect: &Receiver<bool>, tx_status2: &Sender<models::Status>) {
+fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<models::Status>, rx_disconnect: &Receiver<bool>, tx_status2: &Sender<models::Status>, midi_sender: Sender<models::MIDI>) {
     loop {
         println!("Waiting for connection command...");
         let received = rx_data.recv().unwrap();
@@ -72,7 +100,13 @@ fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<model
                             for rule in received.clone().rules {
                                 let ch = rule.character.chars().next().expect("Empty rule!");
                                 if char::from(c) == ch {
-                                    println!("Matched rule ({ch})! Sending MIDI message...");
+                                    let channel = rule.channel.parse().expect("Channel must be an integer!");
+                                    let note = rule.code.parse().expect("Note must be an integer!");
+                                    let data = rule.data.parse().expect("Data must be an integer!");
+                                    let velocity = rule.velocity.parse().expect("Velocity must be an integer!");
+
+                                    let _ = midi_sender.send(models::MIDI {channel: channel, note: note, data: data, velocity: velocity});
+                                    println!("Matched rule ({ch})!");
                                 }
                             }
                         },

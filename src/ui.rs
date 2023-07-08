@@ -116,6 +116,10 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
                     .with_font(small_font.clone())
                     .lens(models::Rule::data)
                 )
+                .with_child(Label::new("Velocity").with_font(small_font.clone()))
+                .with_child(TextBox::new()
+                    .with_font(small_font.clone())
+                    .lens(models::Rule::velocity))
         }).background(Color::rgb(0.4,0.4,0.4))
         .lens(models::AppData::rules))
         .fix_height(250.0)
@@ -124,7 +128,7 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
 
     let add_rule_button: Align<models::AppData> = Button::new("Add Rule")
         .on_click(|_ctx, data: &mut models::AppData, _env| {
-            (*data).rules.push_back(models::Rule {character: "a".to_string(), channel: "0".to_string(), code: "0".to_string(), data: "0".to_string()})
+            (*data).rules.push_back(models::Rule {character: "a".to_string(), channel: "0".to_string(), code: "0".to_string(), data: "0".to_string(), velocity: "0".to_string()})
         })
         .disabled_if(|data, _| (*data).connected)
         .padding(5.0)
