@@ -8,7 +8,9 @@ Whismur is a small application written Rust to create a bridge between a serial 
 
 ## How It Works
 
-Just program your arduino to print to the serial port simple characters and configure whismur to listen to this characters and emit MIDI events, I personally use it for connecting a p10 pedal to my computer, through arduino and whismur, and controlling a kick drum with the pedal.
+Just program your arduino to print to the serial port and configure whismur to listen to this serial port for certain characters and emit MIDI events, I personally use it for connecting a p10 pedal to arduino and controlling a kick drum with the pedal.
+
+<img src="screenshot.png" width="550" height="200"/>
 
 ## Installation
 
@@ -20,7 +22,7 @@ Just clone the project and run
 ```bash
 cargo run
 ```
-on the root directory.
+on the root directory, you need to have Rust configured in your machine.
 
 ## Arduino Example Code
 
