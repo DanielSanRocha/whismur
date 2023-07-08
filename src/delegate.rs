@@ -16,6 +16,20 @@ impl AppDelegate<models::AppData> for Delegate {
             }
         }
 
+        if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
+            match std::fs::read_to_string(file_info.path()) {
+                Ok(data_s) => {
+                    let new_data: models::AppData = serde_json::from_str(&data_s).expect("Error deconding json data!");
+                    *data =  new_data;
+                    return Handled::Yes;
+                }
+                Err(e) => {
+                    println!("Error opening file: {e}");
+                    return Handled::No;
+                }
+            }
+        }
+
         return Handled::Yes;
     }
 }

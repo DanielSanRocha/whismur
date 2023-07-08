@@ -34,6 +34,12 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .default_name(String::from("config.json"))
         .title("Save the current program state")
         .button_text("Save");
+    let load_dialog_options = FileDialogOptions::new()
+        .allowed_types(vec![json])
+        .default_type(json)
+        .default_name(String::from("config.json"))
+        .title("Load the program state")
+        .button_text("Load");
 
     let font = FontDescriptor::new(FontFamily::MONOSPACE).with_size(26.0);
 
@@ -144,6 +150,9 @@ fn ui_builder() -> impl Widget<models::AppData> {
         .fix_width(100.0)
         .center();
     let load_button: Align<models::AppData> = Button::new("Load")
+        .on_click(move |ctx, _, _| {
+            ctx.submit_command(commands::SHOW_OPEN_PANEL.with(load_dialog_options.clone()))
+        })
         .padding(5.0)
         .fix_width(100.0)
         .center();
