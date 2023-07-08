@@ -7,3 +7,4 @@ edition = "2021"
 druid = { version = "0.8.3", features = ["im", "serde"] }
 serde_json = "1.0.100"
 serde = { version = "1.0.167", features = ["derive"] }
+serialport = "4.2.1"

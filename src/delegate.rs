@@ -19,8 +19,13 @@ impl AppDelegate<models::AppData> for Delegate {
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
             match std::fs::read_to_string(file_info.path()) {
                 Ok(data_s) => {
-                    let new_data: models::AppData = serde_json::from_str(&data_s).expect("Error deconding json data!");
-                    *data =  new_data;
+                    match serde_json::from_str(&data_s) {
+                        Ok(new_data) => *data = new_data,
+                        Err(e) => {
+                            println!("Error decoding json data: {e}");
+                            return Handled::No;
+                        }
+                    };
                     return Handled::Yes;
                 }
                 Err(e) => {
@@ -28,6 +33,11 @@ impl AppDelegate<models::AppData> for Delegate {
                     return Handled::No;
                 }
             }
+        }
+
+        if let Some(_) = cmd.get(commands::CLOSE_WINDOW) {
+            println!("Closing program...");
+            std::process::exit(0);
         }
 
         return Handled::Yes;
