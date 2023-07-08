@@ -46,7 +46,7 @@ fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<model
         let baud_rate = received.baud_rate.parse().expect("Baudrate should be an integer");
 
         match serialport::new(received.serial_port.clone(), baud_rate).open() {
-            Ok(p) => {
+            Ok(mut p) => {
                 let status = models::Status {connected: true, message: String::from("")};
                 let _ = tx_status.send(status);
                 println!("Connected!");
@@ -61,6 +61,22 @@ fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<model
                         let _ = tx_status2.send(status);
                         drop(p);
                         break;
+                    }
+
+                    let mut buf: Vec<u8> = vec![0;1];
+                    match p.read(buf.as_mut_slice()) {
+                        Ok(_) => {
+                            let c = buf[0];
+                            println!("Received data: {c}");
+
+                            for rule in received.clone().rules {
+                                let ch = rule.character.chars().next().expect("Empty rule!");
+                                if char::from(c) == ch {
+                                    println!("Matched rule ({ch})! Sending MIDI message...");
+                                }
+                            }
+                        },
+                        Err(_) => {}
                     }
                 }
             },
