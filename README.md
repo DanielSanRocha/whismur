@@ -43,9 +43,9 @@ int otherPedalState = LOW;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(pedalPin, INPUT);
 
-  Serial.print("Arduino is Ready!");
+  pinMode(pedalPin, INPUT);
+  pinMode(otherPedalPin, INPUT);
 }
 
 void loop() {
