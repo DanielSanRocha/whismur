@@ -5,6 +5,7 @@ use std::sync::{mpsc, mpsc::{Receiver, Sender}};
 
 use druid::{AppLauncher, PlatformError, WindowDesc};
 use druid::im::Vector;
+use serialport::SerialPort;
 
 mod models;
 mod delegate;
@@ -13,22 +14,19 @@ mod ui;
 fn main() -> Result<(), PlatformError> {
     let (client, _status) = jack::Client::new("whismur", jack::ClientOptions::NO_START_SERVER).unwrap();
     let mut midi_port = client.register_port("out", jack::MidiOut::default()).expect("Error creating MIDI out port!");
-    let (midi_sender, midi_receiver) = mpsc::channel::<models::MIDI>();
+    let (midi_sender, midi_receiver) = mpsc::channel::<models::Midi>();
 
     let cback = move |_: &jack::Client, ps: &jack::ProcessScope| -> jack::Control {
         let mut put_p = midi_port.writer(ps);
-        match midi_receiver.recv_timeout(Duration::from_millis(1)) {
-            Ok(midi) => {
-                put_p.write(&jack::RawMidi {
-                    time: 0,
-                    bytes: &[
-                        midi.data | midi.channel,
-                        midi.note,
-                        midi.velocity
-                    ],
-                }).unwrap();
-            },
-            Err(_) => {}
+        if let Ok(midi) = midi_receiver.recv_timeout(Duration::from_millis(1)) {
+            put_p.write(&jack::RawMidi {
+                time: 0,
+                bytes: &[
+                    midi.data | midi.channel,
+                    midi.note,
+                    midi.velocity
+                ],
+            }).unwrap();
         };
         jack::Control::Continue
     };
@@ -67,18 +65,32 @@ fn main() -> Result<(), PlatformError> {
     result
 }
 
-fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<models::Status>, rx_disconnect: &Receiver<bool>, tx_status2: &Sender<models::Status>, midi_sender: Sender<models::MIDI>) {
+fn connect(data: &models::AppData) -> Result<(Box<dyn SerialPort>, Vector<models::ParsedRule>), String> {
+    let baud_rate = match data.baud_rate.chars().filter(|c| c.is_ascii_digit()).collect::<String>().parse::<u32>() {
+        Ok(b) => b,
+        Err(_) => return Err(String::from("Baudrate must be an integer!"))
+    };
+
+    let parsed_rules = match models::parse_rules(data.rules.clone()) {
+        Ok(p) => p,
+        Err(message) => return Err(message)
+    };
+
+    match serialport::new(data.serial_port.clone(), baud_rate).open() {
+        Ok(p) => Ok((p, parsed_rules)),
+        Err(e) => Err(format!("Error connecting to the port: {e}"))
+    }
+}
+
+fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<models::Status>, rx_disconnect: &Receiver<bool>, tx_status2: &Sender<models::Status>, midi_sender: Sender<models::Midi>) {
     loop {
         println!("Waiting for connection command...");
         let received = rx_data.recv().unwrap();
-        let baud_rate = received.baud_rate.chars().filter(|c| c.is_digit(10)).collect::<String>().parse().expect("Baudrate should be an integer");
-
-        match serialport::new(received.serial_port.clone(), baud_rate).open() {
-            Ok(mut p) => {
+        match connect(&received) {
+            Ok((mut p, rules)) => {
                 let status = models::Status {connected: true, message: String::from("")};
                 let _ = tx_status.send(status);
                 println!("Connected!");
-                let parsed_rules = models::parse_rules(received.clone().rules);
 
                 loop {
                     let status = match rx_disconnect.recv_timeout(Duration::from_millis(1)) {
@@ -95,26 +107,24 @@ fn listener_thread(rx_data: &Receiver<models::AppData>, tx_status: &Sender<model
 
                     let mut buf: Vec<u8> = vec![0;1];
 
-                    match p.read(buf.as_mut_slice()) {
-                        Ok(_) => {
-                            let c = buf[0];
-                            println!("Received data: {c}");
+                    if p.read(buf.as_mut_slice()).is_ok() {
+                        let c = buf[0];
+                        println!("Received data: {c}");
 
-                            for rule in parsed_rules.clone() {
-                                let ch = rule.character;
-                                if char::from(c) == ch {
-                                    let _ = midi_sender.send(models::MIDI {channel: rule.channel, note: rule.code, data: rule.data, velocity: rule.velocity});
-                                    println!("Matched rule ({ch})!");
-                                }
+                        for rule in rules.clone() {
+                            let ch = rule.character;
+                            if char::from(c) == ch {
+                                let _ = midi_sender.send(models::Midi {channel: rule.channel, note: rule.code, data: rule.data, velocity: rule.velocity});
+                                println!("Matched rule ({ch})!");
                             }
-                        },
-                        Err(_) => {}
+                        }
                     }
                 }
             },
             Err(e) => {
-                let status = models::Status {connected: false, message: format!("Error connecting to serial port: {e}")};
+                let status = models::Status {connected: false, message: e};
                 let _ = tx_status.send(status);
+                println!("Could not connect!")
             }
         }
     }

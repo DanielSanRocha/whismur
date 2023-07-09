@@ -8,7 +8,7 @@ struct OnlyNumbersController;
 
 impl Controller<String, TextBox<String>> for OnlyNumbersController {
     fn update(&mut self, child: &mut TextBox<String>, ctx: &mut druid::UpdateCtx, old_data: &String, data: &String, env: &druid::Env) {
-        let new_data = data.chars().filter(|c| c.is_digit(10)).collect::<String>();
+        let new_data = data.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
         child.update(ctx, old_data, &new_data, env);
     }
 }
@@ -74,7 +74,7 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
             let _ = tx_data.send((*data).clone());
             let status =  rx_status.recv().expect("Error receiving status from thread!");
             if status.connected {
-                (*data).connected = true;
+                data.connected = true;
             } else {
                 println!("{}", status.message);
             }
@@ -87,8 +87,8 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
         .on_click(move |_ctx, data: &mut models::AppData, _env| {
             let _ = tx_disconnect.send(true);
             let status = rx_status2.recv().expect("Erro receiving disconnect status from thread!");
-            if status.connected == false {
-                (*data).connected = false;
+            if !status.connected {
+                data.connected = false;
             } else {
                 println!("{}", status.message);
             }
@@ -150,30 +150,30 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
         .lens(models::AppData::rules))
         .fix_height(250.0)
         .padding(20.0)
-        .disabled_if(|data, _| (*data).connected);
+        .disabled_if(|data, _| data.connected);
 
     let add_rule_button: Align<models::AppData> = Button::new("Add Rule")
         .on_click(|_ctx, data: &mut models::AppData, _env| {
-            (*data).rules.push_back(models::Rule {character: "a".to_string(), channel: "0".to_string(), code: "0".to_string(), data: "0".to_string(), velocity: "0".to_string()})
+            data.rules.push_back(models::Rule {character: "a".to_string(), channel: "0".to_string(), code: "0".to_string(), data: "0".to_string(), velocity: "0".to_string()})
         })
-        .disabled_if(|data, _| (*data).connected)
+        .disabled_if(|data, _| data.connected)
         .padding(5.0)
         .fix_width(100.0)
         .center();
     let remove_rule_button = Button::new("Remove Last Rule")
         .on_click(|_ctx, data: &mut models::AppData, _env| {
-            let l = (*data).rules.len();
+            let l = data.rules.len();
             if l > 0 {
-                (*data).rules.remove(l - 1);
+                data.rules.remove(l - 1);
             }
         })
-        .disabled_if(|data, _| (*data).rules.len() == 0 || (*data).connected)
+        .disabled_if(|data, _| data.rules.is_empty() || data.connected)
         .padding(5.0);
     let save_button: Align<models::AppData> = Button::new("Save")
         .on_click(move |ctx, _: &mut models::AppData, _| {
             ctx.submit_command(commands::SHOW_SAVE_PANEL.with(save_dialog_options.clone()))
         })
-        .disabled_if(|data, _| (*data).connected)
+        .disabled_if(|data, _| data.connected)
         .padding(5.0)
         .fix_width(100.0)
         .center();
@@ -181,7 +181,7 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
         .on_click(move |ctx, _: &mut models::AppData, _| {
             ctx.submit_command(commands::SHOW_OPEN_PANEL.with(load_dialog_options.clone()))
         })
-        .disabled_if(|data, _| (*data).connected)
+        .disabled_if(|data, _| data.connected)
         .padding(5.0)
         .fix_width(100.0)
         .center();
@@ -192,7 +192,7 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
             if data.connected {String::from("     Status: Connected")}
             else {String::from("  Status: Disconnected")}
         })
-        .with_font(font.clone())
+        .with_font(font)
         .with_text_color(footer_label_color_key.clone())
         .padding(5.0)
         .align_right()

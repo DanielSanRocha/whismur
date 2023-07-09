@@ -35,11 +35,11 @@ impl AppDelegate<models::AppData> for Delegate {
             }
         }
 
-        if let Some(_) = cmd.get(commands::CLOSE_WINDOW) {
+        if cmd.get(commands::CLOSE_WINDOW).is_some() {
             println!("Closing program...");
             std::process::exit(0);
         }
 
-        return Handled::Yes;
+        Handled::Yes
     }
 }

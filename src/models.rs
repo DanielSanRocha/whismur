@@ -29,20 +29,39 @@ pub struct ParsedRule {
     pub velocity: u8
 }
 
-pub fn parse_rules(rules: Vector<Rule>) -> Vector<ParsedRule> {
+pub fn parse_rules(rules: Vector<Rule>) -> Result<Vector<ParsedRule>, String> {
     let mut ps_rules = Vector::new();
 
     for rule in rules {
-        let ch = rule.character.chars().next().expect("Empty Rule!");
-        let channel = rule.channel.chars().filter(|c| c.is_digit(10)).collect::<String>().parse().expect("Channel must be an integer!");
-        let code = rule.code.chars().filter(|c| c.is_digit(10)).collect::<String>().parse().expect("Channel must be an integer!");
-        let data = rule.data.chars().filter(|c| c.is_digit(10)).collect::<String>().parse().expect("Channel must be an integer!");
-        let velocity = rule.velocity.chars().filter(|c| c.is_digit(10)).collect::<String>().parse().expect("Channel must be an integer!");
+        let ch = match rule.character.chars().next() {
+            Some(c) => c,
+            None => return Err(String::from("Rule with empty character!"))
+        };
 
-        ps_rules.push_back(ParsedRule {character: ch, channel: channel, code: code, data: data, velocity: velocity});
+        let channel = match rule.channel.chars().filter(|c| c.is_ascii_digit()).collect::<String>().parse() {
+            Ok(c) => c,
+            Err(_) => return Err(String::from("Channel must be an integer!"))
+        };
+
+        let code = match rule.code.chars().filter(|c| c.is_ascii_digit()).collect::<String>().parse() {
+            Ok(c) => c,
+            Err(_) => return Err(String::from("Code must be an integer!"))
+        };
+
+        let data = match rule.data.chars().filter(|c| c.is_ascii_digit()).collect::<String>().parse() {
+            Ok(d) => d,
+            Err(_) => return Err(String::from("Data must be an integer!"))
+        };
+
+        let velocity = match rule.velocity.chars().filter(|c| c.is_ascii_digit()).collect::<String>().parse() {
+            Ok(v) => v,
+            Err(_) => return Err(String::from("Velocity must be an integer!"))
+        };
+
+        ps_rules.push_back(ParsedRule {character: ch, channel, code, data, velocity});
     }
 
-    ps_rules
+    Ok(ps_rules)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -51,7 +70,7 @@ pub struct Status {
     pub message: String
 }
 
-pub struct MIDI {
+pub struct Midi {
     pub data: u8,
     pub channel: u8,
     pub note: u8,
