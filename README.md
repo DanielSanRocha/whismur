@@ -4,7 +4,7 @@
 
 ## Description
 
-Whismur is a small application written in Rust using druid to create a bridge between a serial port and a Jack MIDI Port. Very useful for controlling MIDI devices/creating sounds using your arduino.
+Whismur is a small application written in Rust using [druid](https://github.com/linebender/druid) to create a bridge between a serial port and a Jack MIDI Port. Very useful for controlling MIDI devices/creating sounds using your arduino.
 
 ## How It Works
 
