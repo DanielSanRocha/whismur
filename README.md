@@ -4,29 +4,35 @@
 
 ## Description
 
-Whismur is a small application written Rust to create a bridge between a serial port and a Jack MIDI Port. Very useful for controlling MIDI devices/creating sounds using your arduino.
+Whismur is a small application written in Rust using druid to create a bridge between a serial port and a Jack MIDI Port. Very useful for controlling MIDI devices/creating sounds using your arduino.
 
 ## How It Works
 
-Just program your arduino to print to the serial port and configure whismur to listen to this serial port for certain characters and emit MIDI events, I personally use it for connecting a p10 pedal to arduino and controlling a kick drum with the pedal.
+Just program your arduino to print to the serial port, for example [this](#arduino-example-code) code, and configure whismur to listen to the arduino serial port. Whismur listen for the characters you configure in the GUI and send a MIDI event when the arduino print these characters.
+
+I personally use Whismur for connecting two pedals to my arduino and sending a kick/snare drums events.
 
 <img src="screenshot.png" width="550" height="200"/>
 
 ## Installation
 
-For linux, download the prebuilt binaries available in the [releases](https://github.com/DanielSanRocha/whismur/releases). For other OSs, run it from source.
+For linux, download the prebuilt binaries available in the [releases](https://github.com/DanielSanRocha/whismur/releases) page. For other OSs, build it from source.
 
-## Running from Source
+## Building from Source
 
 Just clone the project and run
 ```bash
 cargo run
 ```
-on the root directory, you need to have Rust configured in your machine.
+on the root directory, you need to have Rust configured in your machine. If everything works fine you can
+```bash
+cargo build --release
+```
+And your binary will be available on the target/release folder.
 
 ## Arduino Example Code
 
-Below an example of arduino code for printing to the serial using two buttons. You can use this snippet for programming your arduino and use it for controlling a drums for example (using whismur!).
+Below an example of arduino code for printing to the serial using two buttons (in my case pedals). You can use this snippet to help you program your arduino.
 
 ```C
 const int pedalPin = 2;
