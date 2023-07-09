@@ -18,6 +18,15 @@ I personally use Whismur for connecting two pedals to my arduino and sending a k
 
 For linux, download the prebuilt binaries available in the [releases](https://github.com/DanielSanRocha/whismur/releases) page. For other OSs, build it from source.
 
+## Running
+
+Just give permission to the binary to run and run it
+```bash
+chmod +x {NAME OF THE BINARY}
+./{NAME OF THE BINARY}
+```
+You can add the binary to a path in your PATH environment variables so you can run it from anywhere using it name as a command on terminal. You can also use [alacarte](https://manpages.ubuntu.com/manpages/focal/man1/alacarte.1.html) in Ubuntu for creating a custom launcher for Whismur.
+
 ## Building from Source
 
 Just clone the project and run
