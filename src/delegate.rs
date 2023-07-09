@@ -1,3 +1,4 @@
+
 use druid::{Env, AppDelegate, DelegateCtx, Target, Command, commands, Handled};
 
 use crate::models;
@@ -10,7 +11,7 @@ impl AppDelegate<models::AppData> for Delegate {
             let json = serde_json::to_string(&data).expect("Error serializing AppState!");
             if let Err(e) = std::fs::write(file_info.path(), json) {
                 println!("{}", e.to_string());
-                return Handled::No;
+                return Handled::Yes;
             } else {
                 return Handled::Yes;
             }
@@ -23,23 +24,18 @@ impl AppDelegate<models::AppData> for Delegate {
                         Ok(new_data) => *data = new_data,
                         Err(e) => {
                             println!("Error decoding json data: {e}");
-                            return Handled::No;
+                            return Handled::Yes;
                         }
                     };
                     return Handled::Yes;
                 }
                 Err(e) => {
                     println!("Error opening file: {e}");
-                    return Handled::No;
+                    return Handled::Yes;
                 }
             }
         }
 
-        if cmd.get(commands::CLOSE_WINDOW).is_some() {
-            println!("Closing program...");
-            std::process::exit(0);
-        }
-
-        Handled::Yes
+        Handled::No
     }
 }

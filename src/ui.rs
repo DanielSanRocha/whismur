@@ -1,4 +1,5 @@
 use std::sync::mpsc::{Sender, Receiver};
+use druid::{WindowConfig, WindowSizePolicy};
 use druid::{commands, widget::Controller, FileSpec, Key, Widget, WidgetExt, FontDescriptor, FontFamily, Color, FileDialogOptions};
 use druid::widget::{Scroll, Flex, Label, TextBox, Button, Align, List};
 
@@ -22,6 +23,23 @@ impl Controller<String, TextBox<String>> for OnlyOneCharacterController {
             None => child.update(ctx, old_data, data, env)
         };
     }
+}
+
+pub fn dialog_ui_builder() -> impl Widget<String> {
+    let font = FontDescriptor::new(FontFamily::MONOSPACE).with_size(22.0);
+    Flex::column()
+        .with_child(
+            Label::new(|data: &String, _env: &_| (*data).clone())
+                .with_font(font)
+                .padding(10.0)
+        )
+        .with_child(
+            Button::new("Ok")
+                .on_click(|ctx, _data, _env|  {
+                    ctx.submit_command(commands::CLOSE_WINDOW);
+                })
+                .padding(10.0)
+        )
 }
 
 pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::Status>, tx_disconnect: Sender<bool>, rx_status2: Receiver<models::Status>) -> impl Widget<models::AppData> {
@@ -70,13 +88,23 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
         .disabled_if(|data, _| data.connected);
 
     let connect_button = Button::new("Connect")
-        .on_click(move |_ctx, data: &mut models::AppData, _env| {
+        .on_click(move |ctx, data: &mut models::AppData, env| {
             let _ = tx_data.send((*data).clone());
             let status =  rx_status.recv().expect("Error receiving status from thread!");
             if status.connected {
                 data.connected = true;
             } else {
                 println!("{}", status.message);
+                ctx.new_sub_window(
+                    WindowConfig::default()
+                        .show_titlebar(true)
+                        .window_size_policy(WindowSizePolicy::Content)
+                        .set_always_on_top(true)
+                        .resizable(false),
+                    dialog_ui_builder(),
+                    status.message,
+                    (*env).clone()
+                );
             }
         })
         .padding(5.0)
@@ -86,7 +114,7 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
     let disconnect_button = Button::new("Disconnect")
         .on_click(move |_ctx, data: &mut models::AppData, _env| {
             let _ = tx_disconnect.send(true);
-            let status = rx_status2.recv().expect("Erro receiving disconnect status from thread!");
+            let status = rx_status2.recv().expect("Error receiving disconnect status from thread!");
             if !status.connected {
                 data.connected = false;
             } else {
