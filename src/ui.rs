@@ -1,8 +1,28 @@
 use std::sync::mpsc::{Sender, Receiver};
-use druid::{commands, FileSpec, Key, Widget, WidgetExt, FontDescriptor, FontFamily, Color, FileDialogOptions};
+use druid::{commands, widget::Controller, FileSpec, Key, Widget, WidgetExt, FontDescriptor, FontFamily, Color, FileDialogOptions};
 use druid::widget::{Scroll, Flex, Label, TextBox, Button, Align, List};
 
 use crate::models;
+
+struct OnlyNumbersController;
+
+impl Controller<String, TextBox<String>> for OnlyNumbersController {
+    fn update(&mut self, child: &mut TextBox<String>, ctx: &mut druid::UpdateCtx, old_data: &String, data: &String, env: &druid::Env) {
+        let new_data = data.chars().filter(|c| c.is_digit(10)).collect::<String>();
+        child.update(ctx, old_data, &new_data, env);
+    }
+}
+
+struct OnlyOneCharacterController;
+
+impl Controller<String, TextBox<String>> for OnlyOneCharacterController {
+    fn update(&mut self, child: &mut TextBox<String>, ctx: &mut druid::UpdateCtx, old_data: &String, data: &String, env: &druid::Env) {
+        match data.chars().next() {
+            Some(c) => child.update(ctx, old_data, &format!("{}", c), env),
+            None => child.update(ctx, old_data, data, env)
+        };
+    }
+}
 
 pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::Status>, tx_disconnect: Sender<bool>, rx_status2: Receiver<models::Status>) -> impl Widget<models::AppData> {
     let json = FileSpec::new("JSON File", &["json"]);
@@ -28,7 +48,7 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
         .align_left();
     let serial_port_text_box = TextBox::new()
         .with_font(font.clone())
-        .with_placeholder("/dev/ttyACM0")
+        .with_placeholder("port")
         .fix_width(350.0)
         .lens(models::AppData::serial_port)
         .padding(5.0)
@@ -41,7 +61,8 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
         .align_left();
     let baud_rate_text_box = TextBox::new()
         .with_font(font.clone())
-        .with_placeholder("9600")
+        .with_placeholder("baudrate")
+        .controller(OnlyNumbersController)
         .fix_width(100.0)
         .lens(models::AppData::baud_rate)
         .padding(5.0)
@@ -99,26 +120,31 @@ pub fn ui_builder(tx_data: Sender<models::AppData>, rx_status: Receiver<models::
                 .with_child(Label::new("Character").with_font(small_font.clone()))
                 .with_child(TextBox::new()
                     .with_font(small_font.clone())
+                    .controller(OnlyOneCharacterController)
                     .lens(models::Rule::character)
                 )
                 .with_child(Label::new("Channel").with_font(small_font.clone()))
                 .with_child(TextBox::new()
                     .with_font(small_font.clone())
+                    .controller(OnlyNumbersController)
                     .lens(models::Rule::channel)
                 )
                 .with_child(Label::new("Code").with_font(small_font.clone()))
                 .with_child(TextBox::new()
                     .with_font(small_font.clone())
+                    .controller(OnlyNumbersController)
                     .lens(models::Rule::code)
                 )
                 .with_child(Label::new("Data").with_font(small_font.clone()))
                 .with_child(TextBox::new()
                     .with_font(small_font.clone())
+                    .controller(OnlyNumbersController)
                     .lens(models::Rule::data)
                 )
                 .with_child(Label::new("Velocity").with_font(small_font.clone()))
                 .with_child(TextBox::new()
                     .with_font(small_font.clone())
+                    .controller(OnlyNumbersController)
                     .lens(models::Rule::velocity))
         }).background(Color::rgb(0.4,0.4,0.4))
         .lens(models::AppData::rules))
